@@ -1,0 +1,57 @@
+{
+    "name": "codepagol/pay-bridge",
+    "description": "A unified multi-gateway payment processing package for PHP and Laravel, supporting MFS (bKash, Nagad, Rocket, Upay), Cards, Net Banking, Crypto (Binance Pay, NOWPayments), and Bangla QR.",
+    "keywords": [
+        "laravel",
+        "php",
+        "payment",
+        "payment-gateway",
+        "bkash",
+        "nagad",
+        "rocket",
+        "upay",
+        "sslcommerz",
+        "stripe",
+        "paypal",
+        "binance-pay",
+        "crypto",
+        "bangla-qr"
+    ],
+    "homepage": "https://github.com/CodePagol/pay-bridge",
+    "support": {
+        "issues": "https://github.com/CodePagol/pay-bridge/issues",
+        "source": "https://github.com/CodePagol/pay-bridge"
+    },
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Md Jahangir Alam Rohan",
+            "email": "rohan9222@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^10.0|^11.0|^12.0",
+        "illuminate/database": "^10.0|^11.0|^12.0",
+        "guzzlehttp/guzzle": "^7.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "PayBridge\\Payment\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "PayBridge\\Payment\\Providers\\PaymentServiceProvider"
+            ],
+            "aliases": {
+                "PayBridge": "PayBridge\\Payment\\Facades\\PayBridge"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
