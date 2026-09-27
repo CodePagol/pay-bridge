@@ -205,10 +205,17 @@ class PaymentGatewaySetting extends Model
             'eps' => [
                 'name' => 'Easy Payment System (EPS)',
                 'category' => 'Banks',
-                'description' => 'Direct bank transfer and internet banking',
+                'description' => 'Official EPS payment gateway for Bangladesh cards, internet banking and MFS',
                 'fields' => [
-                    'merchant_id'  => ['label' => 'Merchant ID', 'type' => 'text', 'placeholder' => 'e.g. EPS100001'],
-                    'callback_url' => ['label' => 'Callback URL', 'type' => 'text', 'default' => '/payment/eps/callback', 'placeholder' => '/payment/eps/callback'],
+                    'merchant_id'    => ['label' => 'Merchant ID (merchantId)', 'type' => 'text', 'placeholder' => 'e.g. 29e86e70-0ac6-45eb-ba04-9fcb0aaed12a'],
+                    'store_id'       => ['label' => 'Store ID (storeId)', 'type' => 'text', 'placeholder' => 'e.g. d44e705f-9e3a-41de-98b1-1674631637da'],
+                    'username'       => ['label' => 'API Username (userName)', 'type' => 'text', 'placeholder' => 'e.g. Epsdemo@gmail.com'],
+                    'password'       => ['label' => 'API Password', 'type' => 'password', 'placeholder' => 'Enter EPS API Password'],
+                    'hash_key'       => ['label' => 'Hash Key (Secret Key)', 'type' => 'password', 'placeholder' => 'Enter EPS Hash Key'],
+                    'device_type_id' => ['label' => 'Device Type ID', 'type' => 'text', 'default' => '1', 'placeholder' => '1'],
+                    'success_url'    => ['label' => 'Success URL', 'type' => 'text', 'default' => '/payment/eps/success', 'placeholder' => '/payment/eps/success'],
+                    'fail_url'       => ['label' => 'Fail URL', 'type' => 'text', 'default' => '/payment/eps/fail', 'placeholder' => '/payment/eps/fail'],
+                    'cancel_url'     => ['label' => 'Cancel URL', 'type' => 'text', 'default' => '/payment/eps/cancel', 'placeholder' => '/payment/eps/cancel'],
                 ]
             ],
             'stripe' => [

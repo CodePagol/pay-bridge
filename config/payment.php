@@ -124,11 +124,18 @@ return [
         ],
 
         'eps' => [
-            'merchant_id'  => env('EPS_MERCHANT_ID', ''),
-            'sandbox'      => env('EPS_SANDBOX', true),
-            'callback_url' => env('EPS_CALLBACK_URL', '/payment/eps/callback'),
-            'fail_url'     => env('EPS_FAIL_URL', '/payment/eps/fail'),
-            'cancel_url'   => env('EPS_CANCEL_URL', '/payment/eps/cancel'),
+            'merchant_id'    => env('EPS_MERCHANT_ID', env('EPSMerchentID', '')),
+            'store_id'       => env('EPS_STORE_ID', env('EPSStoreID', '')),
+            'username'       => env('EPS_USERNAME', env('EPSUserName', '')),
+            'password'       => env('EPS_PASSWORD', env('EPSPassword', '')),
+            'hash_key'       => env('EPS_HASH_KEY', env('EPSHashkey', '')),
+            'device_type_id' => env('EPS_DEVICE_TYPE_ID', env('EPSDeviceTypeID', '1')),
+            'sandbox'        => env('EPS_SANDBOX', true),
+            'base_url'       => env('EPS_BASE_URL', env('EPSBaseURL', '')),
+            'success_url'    => env('EPS_SUCCESS_URL', '/payment/eps/success'),
+            'callback_url'   => env('EPS_CALLBACK_URL', '/payment/eps/callback'),
+            'fail_url'       => env('EPS_FAIL_URL', '/payment/eps/fail'),
+            'cancel_url'     => env('EPS_CANCEL_URL', '/payment/eps/cancel'),
         ],
 
         'binance_pay' => [

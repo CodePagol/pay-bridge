@@ -180,6 +180,16 @@ $response = PayBridge::driver('binance_pay')->pay([
     'product_name' => 'VIP Membership',
 ]);
 
+// Easy Payment System (EPS)
+$response = PayBridge::driver('eps')->pay([
+    'amount'         => 1400.00,
+    'transaction_id' => 'TXN_' . time(),
+    'customer_name'  => 'Rahim Uddin',
+    'customer_email' => 'rahim@example.com',
+    'customer_phone' => '01700000000',
+    'product_name'   => 'Service Subscription',
+]);
+
 // Bangla QR (Scannable by bKash, Nagad, Rocket, etc.)
 $response = PayBridge::driver('bangla_qr')->pay([
     'amount'         => 1250.00,
@@ -557,6 +567,13 @@ STRIPE_SECRET_KEY=sk_test_...
 
 BINANCE_PAY_API_KEY=your_cert_sn
 BINANCE_PAY_SECRET_KEY=your_secret
+
+EPS_MERCHANT_ID=29e86e70-0ac6-45eb-ba04-9fcb0aaed12a
+EPS_STORE_ID=d44e705f-9e3a-41de-98b1-1674631637da
+EPS_USERNAME=your_username
+EPS_PASSWORD=your_password
+EPS_HASH_KEY=your_hash_key
+EPS_SANDBOX=true
 ```
 
 See [`config/payment.php`](config/payment.php) for the complete list of all 16 gateway variables.
@@ -591,14 +608,18 @@ PayBridge is open-source software licensed under the [MIT License](LICENSE).
 
 ## 📋 Changelog
 
-### v1.0.1 — Bug Fixes, Documentation & Reliability Update
+### v1.0.1 — Update EPS Driver as per Official Live Documentation & Bug Fixes
 
-- **Bug Fix**: Removed duplicate `surjopay` config block in `config/payment.php`.
-- **Dependency Optimization**: Removed unused `ramsey/uuid` dependency from `composer.json` and updated lockfile.
-- **Facade Alignment**: Standardized Facade namespace and class as `PayBridge\Payment\Facades\PayBridge`.
-- **Admin Control**: Added `PAY_BRIDGE_ADMIN_ENABLED` config flag to conditionally load admin routes and views.
-- **Import Cleanup**: Removed unused `Illuminate\Support\Str` imports from driver classes.
-- **Documentation**: Completed full documentation suite (all 7 guide chapters + updated README).
+- **EPS Driver Refactor & Update**: Updated and refactored the EPS (Easy Payment System) payment driver based on EPS official live API documentation and official repository ([EPS-PG/EPS_Laravel](https://github.com/EPS-PG/EPS_Laravel)).
+- **Live & Sandbox Endpoints**: Configured official live (`https://pgapi.eps.com.bd`) and sandbox (`https://sandboxpgapi.eps.com.bd`) base URLs with dynamic override support.
+- **HMAC-SHA512 `x-hash` Security**: Implemented standard two-step authentication (`/v1/Auth/GetToken`), hosted payment initiation (`/v1/EPSEngine/InitializeEPS`), and server-to-server transaction verification (`/v1/EPSEngine/CheckMerchantTransactionStatus`).
+- **Flexible Environment Variable Fallback**: Supported both PayBridge standard env names (`EPS_MERCHANT_ID`, `EPS_STORE_ID`, `EPS_USERNAME`, `EPS_PASSWORD`, `EPS_HASH_KEY`) and official EPS live keys (`EPSMerchentID`, `EPSStoreID`, `EPSUserName`, `EPSPassword`, `EPSHashkey`).
+- **Admin Control Panel**: Enhanced EPS credential configuration and field definitions in `PaymentGatewaySetting`.
+- **Bug Fixes & Refinements**:
+  - Removed duplicate `surjopay` config block in `config/payment.php`.
+  - Optimized dependencies and standardized Facade namespace.
+  - Added `PAY_BRIDGE_ADMIN_ENABLED` config flag.
+  - Completed full documentation suite, interactive developer portal (`docs/app.js`), and troubleshooting guides.
 
 ### v1.0.0 — Initial Release
 
