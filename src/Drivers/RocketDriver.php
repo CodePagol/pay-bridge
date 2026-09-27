@@ -6,10 +6,9 @@ class RocketDriver extends AbstractGatewayDriver
 {
     protected function getBaseUrl(): string
     {
-        // DBBL typically uses ecom.dutchbanglabank.com for both test and live, with different merchant IDs/Terminals
-        return $this->config['sandbox']
-            ? 'https://ecomtest.dutchbanglabank.com/ecomws' // Example test URL
-            : 'https://ecom.dutchbanglabank.com/ecomws';    // Example live URL
+        return $this->isSandbox()
+            ? 'https://ecomtest.dutchbanglabank.com/ecomws' // Test URL
+            : 'https://ecom.dutchbanglabank.com/ecomws';    // Live URL
     }
 
     public function pay(array $data): array
@@ -60,7 +59,7 @@ class RocketDriver extends AbstractGatewayDriver
 
             return $this->formatResponse(false, 'Failed to get Rocket checkout URL', $orderId, null, ['raw' => $responseStr]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('Rocket Pay Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -98,14 +97,12 @@ class RocketDriver extends AbstractGatewayDriver
             }
 
             if ($statusOk) {
-                $this->fireSuccessEvent($orderId, ['dbbl_tran_id' => $dbblTranId, 'raw' => $responseStr]);
                 return $this->formatResponse(true, 'Payment verified successfully', $orderId, null, ['raw' => $responseStr]);
             }
 
-            $this->fireFailedEvent($orderId, ['dbbl_tran_id' => $dbblTranId, 'raw' => $responseStr]);
             return $this->formatResponse(false, 'Payment verification failed', $orderId, null, ['raw' => $responseStr]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('Rocket Verify Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -123,7 +120,6 @@ class RocketDriver extends AbstractGatewayDriver
         $orderId = $payload['order_id'] ?? null;
         
         if (isset($payload['RESULT']) && $payload['RESULT'] === 'OK') {
-            $this->fireSuccessEvent($orderId, $payload);
             return $this->formatResponse(true, 'Webhook processed successfully', $orderId, null, $payload);
         }
 

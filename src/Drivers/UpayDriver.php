@@ -6,7 +6,7 @@ class UpayDriver extends AbstractGatewayDriver
 {
     protected function getBaseUrl(): string
     {
-        return $this->config['sandbox']
+        return $this->isSandbox()
             ? 'https://uat-pg.upaybd.com'
             : 'https://pg.upaybd.com';
     }
@@ -75,7 +75,7 @@ class UpayDriver extends AbstractGatewayDriver
 
             return $this->formatResponse(false, 'Failed to get Upay checkout URL', $orderId, null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('Upay Pay Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -102,14 +102,12 @@ class UpayDriver extends AbstractGatewayDriver
             $responseData = json_decode($response->getBody()->getContents(), true);
 
             if (isset($responseData['data']['status']) && $responseData['data']['status'] === 'successful') {
-                $this->fireSuccessEvent($orderId, $responseData);
                 return $this->formatResponse(true, 'Payment verified successfully', $orderId, null, $responseData);
             }
 
-            $this->fireFailedEvent($orderId, $responseData);
             return $this->formatResponse(false, 'Payment verification failed', $orderId, null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('Upay Verify Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -127,7 +125,6 @@ class UpayDriver extends AbstractGatewayDriver
         $orderId = $payload['txn_id'] ?? ($payload['invoice_id'] ?? null);
 
         if (isset($payload['status']) && strtolower($payload['status']) === 'successful') {
-            $this->fireSuccessEvent($orderId, $payload);
             return $this->formatResponse(true, 'Webhook processed successfully', $orderId, null, $payload);
         }
 

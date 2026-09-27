@@ -65,7 +65,7 @@ class NowPaymentsDriver extends AbstractGatewayDriver
             $message = $responseData['message'] ?? 'Failed to create NOWPayments invoice';
             return $this->formatResponse(false, $message, $orderId, null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('NOWPayments pay() Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -105,7 +105,7 @@ class NowPaymentsDriver extends AbstractGatewayDriver
 
             return $this->formatResponse(false, "Payment failed with status: {$status}", $orderId, null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('NOWPayments verify() Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -165,7 +165,7 @@ class NowPaymentsDriver extends AbstractGatewayDriver
 
             return $this->formatResponse(false, "NOWPayments Webhook status: {$paymentStatus}", $orderId, null, $payload);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('NOWPayments webhook() Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }

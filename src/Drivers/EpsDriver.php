@@ -348,7 +348,6 @@ class EpsDriver extends AbstractGatewayDriver
             }
 
             if (in_array($status, ['SUCCESS', 'SUCCESSFUL', 'COMPLETED', 'PAID'])) {
-                $this->fireSuccessEvent($transactionId, $apiData ?? $data);
                 return $this->formatResponse(
                     true,
                     'Payment verified successfully with EPS',
@@ -360,7 +359,6 @@ class EpsDriver extends AbstractGatewayDriver
                 );
             }
 
-            $this->fireFailedEvent($transactionId, $apiData ?? $data);
             $failMsg = !empty($status) ? "EPS payment status: {$status}" : 'EPS payment verification failed';
 
             return $this->formatResponse(false, $failMsg, $transactionId, null, $apiData ?? $data);

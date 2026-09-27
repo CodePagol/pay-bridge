@@ -6,7 +6,7 @@ class NagadDriver extends AbstractGatewayDriver
 {
     protected function getBaseUrl(): string
     {
-        return $this->config['sandbox']
+        return $this->isSandbox()
             ? 'https://sandbox.mynagad.com:10080/remote-payment-gateway-1.0/api/dfs'
             : 'https://api.mynagad.com/api/dfs';
     }
@@ -166,7 +166,7 @@ class NagadDriver extends AbstractGatewayDriver
 
             return $this->formatResponse(false, 'Failed to get Nagad checkout URL', $orderId, null, $completeResponseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('Nagad Pay Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -194,14 +194,12 @@ class NagadDriver extends AbstractGatewayDriver
             $orderId = $responseData['orderId'] ?? null;
 
             if (isset($responseData['status']) && $responseData['status'] === 'Success') {
-                $this->fireSuccessEvent($orderId, $responseData);
                 return $this->formatResponse(true, 'Payment verified successfully', $orderId, null, $responseData);
             }
 
-            $this->fireFailedEvent($orderId, $responseData);
             return $this->formatResponse(false, 'Payment verification failed', $orderId, null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('Nagad Verify Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -217,7 +215,6 @@ class NagadDriver extends AbstractGatewayDriver
         // Nagad typically communicates status changes via callbacks/IPN if configured in merchant portal
         $orderId = $payload['orderId'] ?? null;
         if (isset($payload['status']) && $payload['status'] === 'Success') {
-            $this->fireSuccessEvent($orderId, $payload);
             return $this->formatResponse(true, 'Webhook processed successfully', $orderId, null, $payload);
         }
 

@@ -3,7 +3,6 @@
 namespace PayBridge\Payment\Drivers;
 
 use PayBridge\Payment\Exceptions\PaymentException;
-use Illuminate\Support\Str;
 
 class BinancePayDriver extends AbstractGatewayDriver
 {
@@ -20,7 +19,7 @@ class BinancePayDriver extends AbstractGatewayDriver
     protected function generateHeaders(string $jsonBody): array
     {
         $timestamp = round(microtime(true) * 1000);
-        $nonce = Str::random(32);
+        $nonce = bin2hex(random_bytes(16)); // 32-char hex nonce, no Laravel dependency
         $apiKey = $this->config['api_key'] ?? '';
         $secretKey = $this->config['secret_key'] ?? '';
 
@@ -90,7 +89,7 @@ class BinancePayDriver extends AbstractGatewayDriver
             $errorMessage = $responseData['errorMessage'] ?? 'Failed to create Binance Pay order';
             return $this->formatResponse(false, $errorMessage, $orderId, null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('Binance Pay pay() Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -139,7 +138,7 @@ class BinancePayDriver extends AbstractGatewayDriver
             $errorMsg = $responseData['errorMessage'] ?? 'Failed to verify Binance Pay order';
             return $this->formatResponse(false, $errorMsg, $merchantTradeNo, null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('Binance Pay verify() Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -176,7 +175,7 @@ class BinancePayDriver extends AbstractGatewayDriver
             $errorMsg = $responseData['errorMessage'] ?? 'Failed to refund Binance Pay transaction';
             return $this->formatResponse(false, $errorMsg, $transactionId, null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('Binance Pay refund() Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -223,7 +222,7 @@ class BinancePayDriver extends AbstractGatewayDriver
 
             return $this->formatResponse(false, 'Binance Pay Webhook: Unhandled or failed status', $merchantTradeNo, null, $payload);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('Binance Pay webhook() Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }

@@ -6,8 +6,8 @@ class SurjoPayDriver extends AbstractGatewayDriver
 {
     protected function getBaseUrl(): string
     {
-        return $this->config['sandbox'] 
-            ? 'https://sandbox.shurjopayment.com' 
+        return $this->isSandbox()
+            ? 'https://sandbox.shurjopayment.com'
             : 'https://engine.shurjopayment.com';
     }
 
@@ -79,7 +79,7 @@ class SurjoPayDriver extends AbstractGatewayDriver
 
             return $this->formatResponse(false, 'Failed to get checkout URL', $payload['order_id'], null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('SurjoPay Pay Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -111,14 +111,12 @@ class SurjoPayDriver extends AbstractGatewayDriver
             $transaction = $responseData[0] ?? null;
 
             if ($transaction && isset($transaction['sp_code']) && $transaction['sp_code'] == '1000') {
-                $this->fireSuccessEvent($data['order_id'], $responseData);
                 return $this->formatResponse(true, 'Payment verified successfully', $data['order_id'], null, $responseData);
             }
 
-            $this->fireFailedEvent($data['order_id'], $responseData);
             return $this->formatResponse(false, 'Payment verification failed', $data['order_id'], null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('SurjoPay Verify Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }

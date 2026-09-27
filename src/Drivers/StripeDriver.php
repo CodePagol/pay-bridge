@@ -48,10 +48,10 @@ class StripeDriver extends AbstractGatewayDriver
                 'customer_email' => $data['customer_email'] ?? null,
             ];
 
-            // Build query string manually to handle nested arrays for x-www-form-urlencoded
+            // Stripe Checkout Sessions API requires JSON body
             $response = $this->client->post($this->getBaseUrl() . '/checkout/sessions', [
-                'headers' => $this->getHeaders(),
-                'form_params' => $payload
+                'headers' => array_merge($this->getHeaders(), ['Content-Type' => 'application/json']),
+                'json'    => $payload
             ]);
 
             $responseData = json_decode($response->getBody()->getContents(), true);
@@ -62,7 +62,7 @@ class StripeDriver extends AbstractGatewayDriver
 
             return $this->formatResponse(false, 'Failed to create Stripe checkout session', $orderId, null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('Stripe Pay Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -84,14 +84,12 @@ class StripeDriver extends AbstractGatewayDriver
             $orderId = $data['order_id'] ?? ($responseData['client_reference_id'] ?? null);
 
             if (isset($responseData['payment_status']) && $responseData['payment_status'] === 'paid') {
-                $this->fireSuccessEvent($orderId, $responseData);
                 return $this->formatResponse(true, 'Payment verified successfully', $orderId, null, $responseData);
             }
 
-            $this->fireFailedEvent($orderId, $responseData);
             return $this->formatResponse(false, 'Payment pending or failed according to Stripe', $orderId, null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('Stripe Verify Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -115,7 +113,7 @@ class StripeDriver extends AbstractGatewayDriver
 
             return $this->formatResponse(false, 'Refund failed', $transactionId, null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('Stripe Refund Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -130,7 +128,6 @@ class StripeDriver extends AbstractGatewayDriver
             $orderId = $session['client_reference_id'];
             
             if ($session['payment_status'] === 'paid') {
-                $this->fireSuccessEvent($orderId, $payload);
                 return $this->formatResponse(true, 'Webhook processed successfully', $orderId, null, $payload);
             }
         }

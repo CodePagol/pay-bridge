@@ -77,11 +77,9 @@ class PortPayDriver extends AbstractGatewayDriver
             $responseData = json_decode($response->getBody()->getContents(), true);
 
             if (isset($responseData['status']) && strtolower($responseData['status']) === 'paid') {
-                $this->fireSuccessEvent($orderId, $responseData);
                 return $this->formatResponse(true, 'Payment verified successfully', $orderId, null, $responseData);
             }
 
-            $this->fireFailedEvent($orderId, $responseData);
             return $this->formatResponse(false, 'Payment verification failed', $orderId, null, $responseData);
 
         } catch (\Exception $e) {
@@ -101,7 +99,6 @@ class PortPayDriver extends AbstractGatewayDriver
 
         // PortPay usually posts JSON webhook
         if (isset($payload['status']) && strtolower($payload['status']) === 'paid') {
-            $this->fireSuccessEvent($orderId, $payload);
             return $this->formatResponse(true, 'Webhook processed successfully', $orderId, null, $payload);
         }
 

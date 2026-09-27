@@ -159,7 +159,7 @@ class BanglaQrDriver extends AbstractGatewayDriver
 
             return $formatted;
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('Bangla QR pay() Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -202,7 +202,7 @@ class BanglaQrDriver extends AbstractGatewayDriver
 
             return $this->formatResponse(false, 'Unable to verify Bangla QR transaction', $transactionId, null, $data);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('Bangla QR verify() Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -250,7 +250,7 @@ class BanglaQrDriver extends AbstractGatewayDriver
 
             return $this->formatResponse(false, "Bangla QR Webhook status: {$status}", $transactionId, null, $payload);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('Bangla QR webhook() Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }

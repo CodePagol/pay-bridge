@@ -6,7 +6,7 @@ class AamarpayDriver extends AbstractGatewayDriver
 {
     protected function getBaseUrl(): string
     {
-        return $this->config['sandbox']
+        return $this->isSandbox()
             ? 'https://sandbox.aamarpay.com'
             : 'https://secure.aamarpay.com';
     }
@@ -51,7 +51,7 @@ class AamarpayDriver extends AbstractGatewayDriver
 
             return $this->formatResponse(false, 'Failed to get Aamarpay checkout URL', $orderId, null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('AamarPay Pay Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -79,14 +79,12 @@ class AamarpayDriver extends AbstractGatewayDriver
             $responseData = json_decode($response->getBody()->getContents(), true);
 
             if (isset($responseData['pay_status']) && $responseData['pay_status'] === 'Successful') {
-                $this->fireSuccessEvent($orderId, $responseData);
                 return $this->formatResponse(true, 'Payment verified successfully', $orderId, null, $responseData);
             }
 
-            $this->fireFailedEvent($orderId, $responseData);
             return $this->formatResponse(false, 'Payment verification failed', $orderId, null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('AamarPay Verify Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -103,7 +101,6 @@ class AamarpayDriver extends AbstractGatewayDriver
         // Aamarpay IPN sends POST data similar to success URL
         if (isset($payload['pay_status']) && $payload['pay_status'] === 'Successful') {
             $orderId = $payload['mer_txnid'] ?? ($payload['tran_id'] ?? null);
-            $this->fireSuccessEvent($orderId, $payload);
             return $this->formatResponse(true, 'Webhook processed', $orderId, null, $payload);
         }
 

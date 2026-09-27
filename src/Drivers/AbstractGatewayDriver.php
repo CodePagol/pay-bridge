@@ -55,7 +55,10 @@ abstract class AbstractGatewayDriver implements PaymentGatewayInterface
         ?float $amount = null,
         ?string $currency = null
     ): array {
-        // Fire events safely without crashing in environments where Event classes or listeners aren't loaded.
+        // Fire events centrally — ensures every driver always dispatches exactly once,
+        // even custom drivers written by library users.
+        // All direct fireSuccessEvent()/fireFailedEvent() calls in drivers have been removed
+        // to prevent double-firing.
         if (function_exists('event')) {
             try {
                 if ($success && $transactionId) {
@@ -163,10 +166,21 @@ abstract class AbstractGatewayDriver implements PaymentGatewayInterface
              }
          }
 
-         return $_SERVER['HTTP_CF_CONNECTING_IP']
-             ?? $_SERVER['HTTP_X_FORWARDED_FOR']
-             ?? $_SERVER['REMOTE_ADDR']
-             ?? '127.0.0.1';
+         // Cloudflare real IP (trusted proxy header)
+         if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+             return $_SERVER['HTTP_CF_CONNECTING_IP'];
+         }
+
+         // X-Forwarded-For may contain multiple IPs (client, proxy1, proxy2...)
+         // Only take the first one (leftmost = original client), and validate it.
+         if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+             $ip = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
+             if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                 return $ip;
+             }
+         }
+
+         return $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
      }
 
      /**

@@ -6,7 +6,7 @@ class PayPalDriver extends AbstractGatewayDriver
 {
     protected function getBaseUrl(): string
     {
-        return $this->config['sandbox']
+        return $this->isSandbox()
             ? 'https://api-m.sandbox.paypal.com'
             : 'https://api-m.paypal.com';
     }
@@ -84,7 +84,7 @@ class PayPalDriver extends AbstractGatewayDriver
 
             return $this->formatResponse(false, 'Failed to get PayPal checkout URL', $orderId, null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('PayPal Pay Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -114,14 +114,12 @@ class PayPalDriver extends AbstractGatewayDriver
 
             if (isset($responseData['status']) && $responseData['status'] === 'COMPLETED') {
                 $customTransactionId = $responseData['purchase_units'][0]['reference_id'] ?? $paypalOrderId;
-                $this->fireSuccessEvent($customTransactionId, $responseData);
                 return $this->formatResponse(true, 'Payment verified successfully', $customTransactionId, null, $responseData);
             }
 
-            $this->fireFailedEvent($paypalOrderId, $responseData);
             return $this->formatResponse(false, 'Payment verification failed', $paypalOrderId, null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('PayPal Verify Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -149,7 +147,7 @@ class PayPalDriver extends AbstractGatewayDriver
 
             return $this->formatResponse(false, 'Refund failed', $transactionId, null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('PayPal Refund Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -162,7 +160,6 @@ class PayPalDriver extends AbstractGatewayDriver
             $resource = $payload['resource'] ?? [];
             $orderId = $resource['id'] ?? 'unknown';
             
-            $this->fireSuccessEvent($orderId, $payload);
             return $this->formatResponse(true, 'Webhook processed successfully', $orderId, null, $payload);
         }
 
