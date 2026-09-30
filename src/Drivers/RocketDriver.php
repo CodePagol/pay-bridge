@@ -19,7 +19,7 @@ class RocketDriver extends AbstractGatewayDriver
             // DBBL nexus gateway usually expects a SOAP or specific REST POST format. 
             // This is a modernized REST representation of the DBBL initiation process.
             $payload = [
-                'merchantId' => $this->config['merchant_id'],
+                'merchantId' => $this->config['merchant_id'] ?? '',
                 'amount' => $data['amount'],
                 'currency' => $data['currency'] ?? 'BDT',
                 'description' => $data['product_name'] ?? 'Order ' . $orderId,
@@ -54,7 +54,7 @@ class RocketDriver extends AbstractGatewayDriver
             }
 
             if ($checkoutUrl) {
-                return $this->formatResponse(true, 'Payment initiated', $orderId, $checkoutUrl, ['dbbl_tran_id' => $dbblTranId]);
+                return $this->formatResponse(true, 'Payment initiated', $orderId, $checkoutUrl, ['dbbl_tran_id' => $dbblTranId], (float)$data['amount'], $data['currency'] ?? 'BDT');
             }
 
             return $this->formatResponse(false, 'Failed to get Rocket checkout URL', $orderId, null, ['raw' => $responseStr]);
@@ -78,7 +78,7 @@ class RocketDriver extends AbstractGatewayDriver
 
             $response = $this->client->post($this->getBaseUrl() . '/verifyTransaction', [
                 'form_params' => [
-                    'merchantId' => $this->config['merchant_id'],
+                    'merchantId' => $this->config['merchant_id'] ?? '',
                     'transactionId' => $dbblTranId,
                     'clientIp' => $this->getClientIp()
                 ]

@@ -22,13 +22,13 @@ class BkashTokenizeDriver extends AbstractGatewayDriver
         $url = $this->getBaseUrl() . '/checkout/token/grant';
         
         $postData = [
-            'app_key' => $this->config['app_key'],
-            'app_secret' => $this->config['app_secret'],
+            'app_key' => $this->config['app_key'] ?? '',
+            'app_secret' => $this->config['app_secret'] ?? '',
         ];
 
         $headers = [
-            'username' => $this->config['username'],
-            'password' => $this->config['password'],
+            'username' => $this->config['username'] ?? '',
+            'password' => $this->config['password'] ?? '',
         ];
 
         $response = $this->postJsonRequest($url, $postData, $headers);
@@ -56,7 +56,7 @@ class BkashTokenizeDriver extends AbstractGatewayDriver
                 'payerReference' => ' ',
                 'callbackURL' => $this->resolveUrl($this->config['callback_url'] ?? '/payment/bkash_tokenize/callback'),
                 'amount' => $data['amount'],
-                'currency' => 'BDT',
+                'currency' => $data['currency'] ?? 'BDT',
                 'intent' => 'sale',
                 'merchantInvoiceNumber' => $transactionId,
             ];
@@ -74,7 +74,9 @@ class BkashTokenizeDriver extends AbstractGatewayDriver
                     'Payment created successfully',
                     $transactionId,
                     $response['bkashURL'],
-                    $response
+                    $response,
+                    (float)$data['amount'],
+                    $data['currency'] ?? 'BDT'
                 );
             }
 
@@ -94,19 +96,22 @@ class BkashTokenizeDriver extends AbstractGatewayDriver
     public function verify(array $data): array
     {
         try {
-            if (!isset($data['paymentID']) || !isset($data['status'])) {
+            $paymentId = $data['paymentID'] ?? ($data['payment_id'] ?? null);
+            $status = strtolower((string)($data['status'] ?? ''));
+
+            if (!$paymentId || empty($status)) {
                 return $this->formatResponse(false, 'paymentID and status are required for verify.');
             }
 
-            if ($data['status'] !== 'success') {
-                return $this->formatResponse(false, 'Status returned was not success: ' . $data['status'], null, null, $data);
+            if ($status !== 'success') {
+                return $this->formatResponse(false, 'Status returned was not success: ' . ($data['status'] ?? ''), null, null, $data);
             }
 
             $token = $this->getGrantToken();
             $url = $this->getBaseUrl() . '/checkout/execute';
 
             $postData = [
-                'paymentID' => $data['paymentID'],
+                'paymentID' => $paymentId,
             ];
 
             $headers = [
@@ -117,7 +122,9 @@ class BkashTokenizeDriver extends AbstractGatewayDriver
             $response = $this->postJsonRequest($url, $postData, $headers);
 
             if (isset($response['statusCode']) && $response['statusCode'] === '0000' && isset($response['trxID'])) {
-                return $this->formatResponse(true, 'Payment execution successful', $response['trxID'], null, $response);
+                $amount = isset($response['amount']) ? (float)$response['amount'] : null;
+                $currency = $response['currency'] ?? 'BDT';
+                return $this->formatResponse(true, 'Payment execution successful', $response['trxID'], null, $response, $amount, $currency);
             }
 
             return $this->formatResponse(false, 'Verification failed: ' . ($response['statusMessage'] ?? 'Unknown error'), null, null, $response);

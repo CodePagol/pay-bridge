@@ -17,7 +17,7 @@ class PayPalDriver extends AbstractGatewayDriver
     protected function getAccessToken(): string
     {
         $response = $this->client->post($this->getBaseUrl() . '/v1/oauth2/token', [
-            'auth' => [$this->config['client_id'], $this->config['secret']],
+            'auth' => [$this->config['client_id'] ?? '', $this->config['secret'] ?? ''],
             'form_params' => [
                 'grant_type' => 'client_credentials'
             ]
@@ -37,6 +37,8 @@ class PayPalDriver extends AbstractGatewayDriver
         try {
             $token = $this->getAccessToken();
             $orderId = $data['transaction_id'] ?? uniqid('pp_');
+            $currency = strtoupper($data['currency'] ?? 'USD');
+            $amount = (float)$data['amount'];
 
             $payload = [
                 'intent' => 'CAPTURE',
@@ -44,8 +46,8 @@ class PayPalDriver extends AbstractGatewayDriver
                     [
                         'reference_id' => $orderId,
                         'amount' => [
-                            'currency_code' => strtoupper($data['currency'] ?? 'USD'),
-                            'value' => number_format((float)$data['amount'], 2, '.', '')
+                            'currency_code' => $currency,
+                            'value' => number_format($amount, 2, '.', '')
                         ],
                         'description' => $data['product_name'] ?? 'Order ' . $orderId
                     ]
@@ -79,7 +81,7 @@ class PayPalDriver extends AbstractGatewayDriver
             }
 
             if ($checkoutUrl) {
-                return $this->formatResponse(true, 'Payment initiated', $responseData['id'], $checkoutUrl, $responseData);
+                return $this->formatResponse(true, 'Payment initiated', $responseData['id'], $checkoutUrl, $responseData, $amount, $currency);
             }
 
             return $this->formatResponse(false, 'Failed to get PayPal checkout URL', $orderId, null, $responseData);
@@ -114,7 +116,13 @@ class PayPalDriver extends AbstractGatewayDriver
 
             if (isset($responseData['status']) && $responseData['status'] === 'COMPLETED') {
                 $customTransactionId = $responseData['purchase_units'][0]['reference_id'] ?? $paypalOrderId;
-                return $this->formatResponse(true, 'Payment verified successfully', $customTransactionId, null, $responseData);
+                $amount = null;
+                $currency = null;
+                if (isset($responseData['purchase_units'][0]['payments']['captures'][0]['amount'])) {
+                    $amount = (float)$responseData['purchase_units'][0]['payments']['captures'][0]['amount']['value'];
+                    $currency = $responseData['purchase_units'][0]['payments']['captures'][0]['amount']['currency_code'];
+                }
+                return $this->formatResponse(true, 'Payment verified successfully', $customTransactionId, null, $responseData, $amount, $currency);
             }
 
             return $this->formatResponse(false, 'Payment verification failed', $paypalOrderId, null, $responseData);

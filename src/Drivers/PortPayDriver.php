@@ -7,7 +7,7 @@ class PortPayDriver extends AbstractGatewayDriver
     protected function getBaseUrl(): string
     {
         // Example base URLs based on generic PortPay/Payment Gateway standards
-        return $this->config['sandbox']
+        return $this->isSandbox()
             ? 'https://sandbox.portpay.io/api/v1'
             : 'https://api.portpay.io/api/v1';
     }
@@ -19,8 +19,8 @@ class PortPayDriver extends AbstractGatewayDriver
 
             // Standard REST Payload for a gateway like PortPay
             $payload = [
-                'app_key' => $this->config['app_key'],
-                'secret_key' => $this->config['secret_key'],
+                'app_key' => $this->config['app_key'] ?? '',
+                'secret_key' => $this->config['secret_key'] ?? '',
                 'amount' => $data['amount'],
                 'currency' => $data['currency'] ?? 'BDT',
                 'order_id' => $orderId,
@@ -47,7 +47,7 @@ class PortPayDriver extends AbstractGatewayDriver
 
             return $this->formatResponse(false, 'Failed to get PortPay checkout URL', $orderId, null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('PortPay Pay Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }
@@ -68,8 +68,8 @@ class PortPayDriver extends AbstractGatewayDriver
                     'Content-Type' => 'application/json'
                 ],
                 'json' => [
-                    'app_key' => $this->config['app_key'],
-                    'secret_key' => $this->config['secret_key'],
+                    'app_key' => $this->config['app_key'] ?? '',
+                    'secret_key' => $this->config['secret_key'] ?? '',
                     'order_id' => $orderId
                 ]
             ]);
@@ -82,7 +82,7 @@ class PortPayDriver extends AbstractGatewayDriver
 
             return $this->formatResponse(false, 'Payment verification failed', $orderId, null, $responseData);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logError('PortPay Verify Error: ' . $e->getMessage());
             return $this->formatResponse(false, $e->getMessage());
         }

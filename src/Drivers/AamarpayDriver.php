@@ -17,8 +17,8 @@ class AamarpayDriver extends AbstractGatewayDriver
             $orderId = $data['transaction_id'] ?? uniqid('aamar_');
 
             $payload = [
-                'store_id' => $this->config['store_id'],
-                'signature_key' => $this->config['signature_key'],
+                'store_id' => $this->config['store_id'] ?? '',
+                'signature_key' => $this->config['signature_key'] ?? '',
                 'tran_id' => $orderId,
                 'amount' => $data['amount'],
                 'currency' => $data['currency'] ?? 'BDT',
@@ -45,7 +45,7 @@ class AamarpayDriver extends AbstractGatewayDriver
 
             $responseData = json_decode($response->getBody()->getContents(), true);
 
-            if (isset($responseData['result']) && $responseData['result'] === 'true' && isset($responseData['payment_url'])) {
+            if (!empty($responseData['payment_url']) && (!isset($responseData['result']) || $responseData['result'] === 'true' || $responseData['result'] === true)) {
                 return $this->formatResponse(true, 'Payment initiated', $orderId, $responseData['payment_url'], $responseData);
             }
 
@@ -70,16 +70,18 @@ class AamarpayDriver extends AbstractGatewayDriver
             $response = $this->client->post($this->getBaseUrl() . '/api/v1/trxcheck/request.php', [
                 'form_params' => [
                     'request_id' => $orderId,
-                    'store_id' => $this->config['store_id'],
-                    'signature_key' => $this->config['signature_key'],
+                    'store_id' => $this->config['store_id'] ?? '',
+                    'signature_key' => $this->config['signature_key'] ?? '',
                     'type' => 'json'
                 ]
             ]);
 
             $responseData = json_decode($response->getBody()->getContents(), true);
 
-            if (isset($responseData['pay_status']) && $responseData['pay_status'] === 'Successful') {
-                return $this->formatResponse(true, 'Payment verified successfully', $orderId, null, $responseData);
+            if (isset($responseData['pay_status']) && strtolower($responseData['pay_status']) === 'successful') {
+                $amount = isset($responseData['amount']) ? (float)$responseData['amount'] : null;
+                $currency = $responseData['currency'] ?? 'BDT';
+                return $this->formatResponse(true, 'Payment verified successfully', $orderId, null, $responseData, $amount, $currency);
             }
 
             return $this->formatResponse(false, 'Payment verification failed', $orderId, null, $responseData);

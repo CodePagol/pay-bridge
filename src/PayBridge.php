@@ -15,21 +15,31 @@ class PayBridge
      */
     protected static array $drivers = [
         'sslcommerz'     => Drivers\SSLCommerzDriver::class,
+        'ssl_commerz'    => Drivers\SSLCommerzDriver::class,
         'stripe'         => Drivers\StripeDriver::class,
         'paypal'         => Drivers\PayPalDriver::class,
         'bkash_tokenize' => Drivers\BkashTokenizeDriver::class,
+        'bkashtokenize'  => Drivers\BkashTokenizeDriver::class,
         'bkash_pwg'      => Drivers\BkashPwgDriver::class,
+        'bkashpwg'       => Drivers\BkashPwgDriver::class,
         'surjopay'       => Drivers\SurjoPayDriver::class,
+        'surjo_pay'      => Drivers\SurjoPayDriver::class,
         'aamarpay'       => Drivers\AamarpayDriver::class,
+        'aamar_pay'      => Drivers\AamarpayDriver::class,
         'nagad'          => Drivers\NagadDriver::class,
         'sonalipay'      => Drivers\SonaliPayDriver::class,
+        'sonali_pay'     => Drivers\SonaliPayDriver::class,
         'rocket'         => Drivers\RocketDriver::class,
         'upay'           => Drivers\UpayDriver::class,
         'portpay'        => Drivers\PortPayDriver::class,
+        'port_pay'       => Drivers\PortPayDriver::class,
         'eps'            => Drivers\EpsDriver::class,
         'binance_pay'    => Drivers\BinancePayDriver::class,
+        'binancepay'     => Drivers\BinancePayDriver::class,
         'nowpayments'    => Drivers\NowPaymentsDriver::class,
+        'now_payments'   => Drivers\NowPaymentsDriver::class,
         'bangla_qr'      => Drivers\BanglaQrDriver::class,
+        'banglaqr'       => Drivers\BanglaQrDriver::class,
     ];
 
     /**
@@ -43,16 +53,20 @@ class PayBridge
      */
     public static function make(string $driver, array $config = []): PaymentGatewayInterface
     {
-        // If in Laravel and no config provided, resolve automatically from PaymentManager
-        if (empty($config) && function_exists('app') && app()->bound(PaymentManager::class)) {
-            return app(PaymentManager::class)->driver($driver);
+        // If in Laravel, resolve through PaymentManager
+        if (function_exists('app') && app()->bound(PaymentManager::class)) {
+            return empty($config)
+                ? app(PaymentManager::class)->driver($driver)
+                : app(PaymentManager::class)->build($driver, $config);
         }
 
-        if (!isset(static::$drivers[$driver])) {
+        $normalized = strtolower(str_replace('-', '_', $driver));
+
+        if (!isset(static::$drivers[$normalized])) {
             throw new InvalidArgumentException("Unsupported PayBridge gateway driver: [{$driver}].");
         }
 
-        $class = static::$drivers[$driver];
+        $class = static::$drivers[$normalized];
         return new $class($config);
     }
 
@@ -75,7 +89,11 @@ class PayBridge
      */
     public static function getSupportedDrivers(): array
     {
-        return array_keys(static::$drivers);
+        if (function_exists('app') && app()->bound(PaymentManager::class)) {
+            return app(PaymentManager::class)->getSupportedDrivers();
+        }
+
+        return array_keys(static::getSupportedGateways());
     }
 
     /**
@@ -110,6 +128,47 @@ class PayBridge
     }
 
     /**
+     * Get list of active gateways enabled by admin for customer checkout.
+     *
+     * @return array
+     */
+    public static function getActiveGateways(): array
+    {
+        if (function_exists('app') && app()->bound(PaymentManager::class)) {
+            return app(PaymentManager::class)->getActiveGateways();
+        }
+
+        return static::getSupportedGateways();
+    }
+
+    /**
+     * Safely resolve absolute URL for Raw PHP and Laravel environments.
+     */
+    public static function resolveUrl(?string $path = null): string
+    {
+        if (empty($path)) {
+            return '';
+        }
+        if (preg_match('/^https?:\/\//i', $path)) {
+            return $path;
+        }
+        if (function_exists('url')) {
+            try {
+                return (string) url($path);
+            } catch (\Throwable $e) {
+                // Fallback to manual resolution
+            }
+        }
+        $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+            || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443);
+        $scheme = $isHttps ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $leadingSlash = str_starts_with($path, '/') ? '' : '/';
+        return "{$scheme}://{$host}{$leadingSlash}{$path}";
+    }
+
+    /**
      * Dynamically delegate static calls to Laravel's PaymentManager if available.
      *
      * @param string $method
@@ -125,24 +184,5 @@ class PayBridge
         }
 
         throw new \BadMethodCallException("Method [{$method}] does not exist on PayBridge.");
-    }
-}
-
-if (!function_exists('url')) {
-    /**
-     * Fallback url() helper for non-Laravel environments.
-     */
-    function url(?string $path = null): string
-    {
-        if (empty($path)) {
-            return '';
-        }
-        if (preg_match('/^https?:\/\//i', $path)) {
-            return $path;
-        }
-        $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        $leadingSlash = str_starts_with($path, '/') ? '' : '/';
-        return "{$scheme}://{$host}{$leadingSlash}{$path}";
     }
 }

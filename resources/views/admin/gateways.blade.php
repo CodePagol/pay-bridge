@@ -434,7 +434,7 @@
 
         .switches-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
             gap: 16px;
             background: rgba(15, 23, 42, 0.6);
             padding: 16px;
@@ -595,6 +595,7 @@
                             <div class="switch-label">
                                 <span>Enable Gateway</span>
                                 <label class="switch">
+                                    <input type="hidden" name="is_active" value="0">
                                     <input type="checkbox" name="is_active" value="1" {{ $gateway->is_active ? 'checked' : '' }}>
                                     <span class="slider"></span>
                                 </label>
@@ -603,7 +604,17 @@
                             <div class="switch-label">
                                 <span>Sandbox Mode</span>
                                 <label class="switch">
+                                    <input type="hidden" name="is_sandbox" value="0">
                                     <input type="checkbox" name="is_sandbox" value="1" {{ $gateway->is_sandbox ? 'checked' : '' }}>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="switch-label">
+                                <span>Primary Default</span>
+                                <label class="switch">
+                                    <input type="hidden" name="is_default" value="0">
+                                    <input type="checkbox" name="is_default" value="1" {{ $gateway->is_default ? 'checked' : '' }}>
                                     <span class="slider"></span>
                                 </label>
                             </div>

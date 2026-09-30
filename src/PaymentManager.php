@@ -233,30 +233,52 @@ class PaymentManager extends Manager
     {
         $driverClassMap = [
             'sslcommerz'     => SSLCommerzDriver::class,
+            'ssl_commerz'    => SSLCommerzDriver::class,
             'stripe'         => StripeDriver::class,
             'paypal'         => PayPalDriver::class,
             'bkash_tokenize' => BkashTokenizeDriver::class,
+            'bkashtokenize'  => BkashTokenizeDriver::class,
             'bkash_pwg'      => BkashPwgDriver::class,
+            'bkashpwg'       => BkashPwgDriver::class,
             'surjopay'       => SurjoPayDriver::class,
+            'surjo_pay'      => SurjoPayDriver::class,
             'aamarpay'       => AamarpayDriver::class,
+            'aamar_pay'      => AamarpayDriver::class,
             'nagad'          => NagadDriver::class,
             'sonalipay'      => SonaliPayDriver::class,
+            'sonali_pay'     => SonaliPayDriver::class,
             'rocket'         => RocketDriver::class,
             'upay'           => UpayDriver::class,
             'portpay'        => PortPayDriver::class,
+            'port_pay'       => PortPayDriver::class,
             'eps'            => EpsDriver::class,
             'binance_pay'    => BinancePayDriver::class,
             'binancepay'     => BinancePayDriver::class,
             'nowpayments'    => NowPaymentsDriver::class,
+            'now_payments'   => NowPaymentsDriver::class,
             'bangla_qr'      => BanglaQrDriver::class,
             'banglaqr'       => BanglaQrDriver::class,
         ];
 
+        $canonicalMap = [
+            'binancepay'   => 'binance_pay',
+            'banglaqr'     => 'bangla_qr',
+            'bkashpwg'     => 'bkash_pwg',
+            'bkashtokenize'=> 'bkash_tokenize',
+            'surjo_pay'    => 'surjopay',
+            'aamar_pay'    => 'aamarpay',
+            'sonali_pay'   => 'sonalipay',
+            'port_pay'     => 'portpay',
+            'now_payments' => 'nowpayments',
+            'ssl_commerz'  => 'sslcommerz',
+        ];
+
         $normalized = strtolower(str_replace('-', '_', $driver));
-        $class = $driverClassMap[$normalized] ?? $this->config->get("payment.drivers.{$driver}.class");
+        $canonical = $canonicalMap[$normalized] ?? $normalized;
+        $class = $driverClassMap[$normalized] ?? $this->config->get("payment.drivers.{$canonical}.class");
 
         if ($class && class_exists($class)) {
-            $baseConfig = $this->config->get("payment.drivers.{$driver}", []);
+            $baseConfig = $this->config->get("payment.drivers.{$canonical}", []);
             $mergedConfig = array_merge(is_array($baseConfig) ? $baseConfig : [], $config);
             return new $class($mergedConfig);
         }

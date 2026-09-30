@@ -18,8 +18,8 @@ class SurjoPayDriver extends AbstractGatewayDriver
     {
         $response = $this->client->post($this->getBaseUrl() . '/api/get_token', [
             'json' => [
-                'username' => $this->config['merchant_name'],
-                'password' => $this->config['merchant_password'],
+                'username' => $this->config['merchant_name'] ?? '',
+                'password' => $this->config['merchant_password'] ?? '',
             ]
         ]);
 
@@ -41,15 +41,16 @@ class SurjoPayDriver extends AbstractGatewayDriver
     {
         try {
             $auth = $this->authenticate();
+            $prefix = $this->config['merchant_prefix'] ?? 'SP_';
             
             $payload = [
-                'prefix' => $this->config['merchant_prefix'],
+                'prefix' => $prefix,
                 'token' => $auth['token'],
                 'return_url' => $this->resolveUrl($this->config['success_url'] ?? '/payment/surjopay/success'),
                 'cancel_url' => $this->resolveUrl($this->config['cancel_url'] ?? '/payment/surjopay/cancel'),
                 'store_id' => $auth['store_id'],
                 'amount' => $data['amount'],
-                'order_id' => $data['transaction_id'] ?? uniqid($this->config['merchant_prefix']),
+                'order_id' => $data['transaction_id'] ?? uniqid($prefix),
                 'currency' => $data['currency'] ?? 'BDT',
                 'customer_name' => $data['customer_name'] ?? 'Customer Name',
                 'customer_address' => $data['customer_address'] ?? 'Customer Address',
@@ -74,7 +75,7 @@ class SurjoPayDriver extends AbstractGatewayDriver
             $responseData = json_decode($response->getBody()->getContents(), true);
 
             if (isset($responseData['checkout_url'])) {
-                return $this->formatResponse(true, 'Payment initiated', $payload['order_id'], $responseData['checkout_url'], $responseData);
+                return $this->formatResponse(true, 'Payment initiated', $payload['order_id'], $responseData['checkout_url'], $responseData, (float)$data['amount'], $data['currency'] ?? 'BDT');
             }
 
             return $this->formatResponse(false, 'Failed to get checkout URL', $payload['order_id'], null, $responseData);
@@ -111,7 +112,9 @@ class SurjoPayDriver extends AbstractGatewayDriver
             $transaction = $responseData[0] ?? null;
 
             if ($transaction && isset($transaction['sp_code']) && $transaction['sp_code'] == '1000') {
-                return $this->formatResponse(true, 'Payment verified successfully', $data['order_id'], null, $responseData);
+                $amount = isset($transaction['amount']) ? (float)$transaction['amount'] : null;
+                $currency = $transaction['currency'] ?? 'BDT';
+                return $this->formatResponse(true, 'Payment verified successfully', $data['order_id'], null, $responseData, $amount, $currency);
             }
 
             return $this->formatResponse(false, 'Payment verification failed', $data['order_id'], null, $responseData);

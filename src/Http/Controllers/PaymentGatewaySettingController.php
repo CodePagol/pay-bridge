@@ -60,10 +60,14 @@ class PaymentGatewaySettingController extends Controller
         $gateway->is_sandbox = $request->boolean('is_sandbox');
         $gateway->credentials = $credentials;
 
-        if ($request->boolean('is_default')) {
-            $this->makeDefault($code);
-        } else {
-            $gateway->is_default = false;
+        if ($request->has('is_default')) {
+            if ($request->boolean('is_default')) {
+                PaymentGatewaySetting::where('is_default', true)->update(['is_default' => false]);
+                $gateway->is_default = true;
+                $gateway->is_active = true;
+            } else {
+                $gateway->is_default = false;
+            }
         }
 
         $gateway->save();

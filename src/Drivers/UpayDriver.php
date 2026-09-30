@@ -22,8 +22,8 @@ class UpayDriver extends AbstractGatewayDriver
                 'Content-Type' => 'application/json'
             ],
             'json' => [
-                'merchant_id' => $this->config['merchant_id'],
-                'merchant_key' => $this->config['merchant_key']
+                'merchant_id' => $this->config['merchant_id'] ?? '',
+                'merchant_key' => $this->config['merchant_key'] ?? ''
             ]
         ]);
 
@@ -47,7 +47,7 @@ class UpayDriver extends AbstractGatewayDriver
                 'txn_id' => $orderId,
                 'invoice_id' => $orderId,
                 'amount' => $data['amount'],
-                'merchant_id' => $this->config['merchant_id'],
+                'merchant_id' => $this->config['merchant_id'] ?? '',
                 'merchant_name' => $this->config['merchant_name'] ?? 'PayBridge Merchant',
                 'merchant_code' => $this->config['merchant_code'] ?? '1234',
                 'merchant_country_code' => 'BD',
@@ -70,7 +70,7 @@ class UpayDriver extends AbstractGatewayDriver
             $responseData = json_decode($response->getBody()->getContents(), true);
 
             if (isset($responseData['data']['gateway_url'])) {
-                return $this->formatResponse(true, 'Payment initiated', $orderId, $responseData['data']['gateway_url'], $responseData);
+                return $this->formatResponse(true, 'Payment initiated', $orderId, $responseData['data']['gateway_url'], $responseData, (float)$data['amount'], $data['currency'] ?? 'BDT');
             }
 
             return $this->formatResponse(false, 'Failed to get Upay checkout URL', $orderId, null, $responseData);
@@ -101,8 +101,10 @@ class UpayDriver extends AbstractGatewayDriver
 
             $responseData = json_decode($response->getBody()->getContents(), true);
 
-            if (isset($responseData['data']['status']) && $responseData['data']['status'] === 'successful') {
-                return $this->formatResponse(true, 'Payment verified successfully', $orderId, null, $responseData);
+            if (isset($responseData['data']['status']) && strtolower($responseData['data']['status']) === 'successful') {
+                $amount = isset($responseData['data']['amount']) ? (float)$responseData['data']['amount'] : null;
+                $currency = $responseData['data']['currency'] ?? 'BDT';
+                return $this->formatResponse(true, 'Payment verified successfully', $orderId, null, $responseData, $amount, $currency);
             }
 
             return $this->formatResponse(false, 'Payment verification failed', $orderId, null, $responseData);

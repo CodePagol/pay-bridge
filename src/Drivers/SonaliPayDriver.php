@@ -18,7 +18,7 @@ class SonaliPayDriver extends AbstractGatewayDriver
             
             // Sonali Bank typically uses Form POST redirect with specific fields
             $payload = [
-                'merchant_id' => $this->config['merchant_id'],
+                'merchant_id' => $this->config['merchant_id'] ?? '',
                 'transaction_id' => $orderId,
                 'amount' => $data['amount'],
                 'return_url' => $this->resolveUrl($this->config['callback_url'] ?? '/payment/sonalipay/callback'),
@@ -37,7 +37,7 @@ class SonaliPayDriver extends AbstractGatewayDriver
 
             // Assuming a standard format return for SDKs
             if (isset($responseData['checkout_url'])) {
-                return $this->formatResponse(true, 'Payment initiated', $orderId, $responseData['checkout_url'], $responseData);
+                return $this->formatResponse(true, 'Payment initiated', $orderId, $responseData['checkout_url'], $responseData, (float)$data['amount'], 'BDT');
             }
 
             // SonaliPay requires a direct form POST from the browser to their endpoint.
@@ -66,7 +66,7 @@ class SonaliPayDriver extends AbstractGatewayDriver
             // SPG often requires an XML payload for verification
             $xml = '<?xml version="1.0" encoding="utf-8"?>';
             $xml .= '<PaymentVerificationReq>';
-            $xml .= '<MerchantId>' . htmlspecialchars($this->config['merchant_id']) . '</MerchantId>';
+            $xml .= '<MerchantId>' . htmlspecialchars($this->config['merchant_id'] ?? '') . '</MerchantId>';
             $xml .= '<TransactionId>' . htmlspecialchars($orderId) . '</TransactionId>';
             $xml .= '</PaymentVerificationReq>';
 
@@ -83,7 +83,8 @@ class SonaliPayDriver extends AbstractGatewayDriver
             $responseData = [];
             if (strpos($responseStr, '<Status>SUCCESS</Status>') !== false) {
                 $responseData['status'] = 'SUCCESS';
-                return $this->formatResponse(true, 'Payment verified successfully', $orderId, null, $responseData);
+                $amount = isset($data['amount']) ? (float)$data['amount'] : null;
+                return $this->formatResponse(true, 'Payment verified successfully', $orderId, null, $responseData, $amount, 'BDT');
             }
 
             $responseData['status'] = 'FAILED';

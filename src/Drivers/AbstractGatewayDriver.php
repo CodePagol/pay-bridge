@@ -297,7 +297,10 @@ abstract class AbstractGatewayDriver implements PaymentGatewayInterface
         }
 
         // Fallback for Raw PHP and non-Laravel environments
-        $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+            || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443);
+        $scheme = $isHttps ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         $leadingSlash = str_starts_with($url, '/') ? '' : '/';
         return "{$scheme}://{$host}{$leadingSlash}{$url}";

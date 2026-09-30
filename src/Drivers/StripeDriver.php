@@ -14,7 +14,7 @@ class StripeDriver extends AbstractGatewayDriver
     protected function getHeaders(): array
     {
         return [
-            'Authorization' => 'Bearer ' . $this->config['secret_key'],
+            'Authorization' => 'Bearer ' . ($this->config['secret_key'] ?? ''),
             'Accept'        => 'application/json',
             'Content-Type'  => 'application/x-www-form-urlencoded'
         ];
@@ -25,7 +25,6 @@ class StripeDriver extends AbstractGatewayDriver
         try {
             $orderId = $data['transaction_id'] ?? uniqid('str_');
             
-            // Stripe expects form-urlencoded for its API, not JSON
             $payload = [
                 'payment_method_types' => ['card'],
                 'line_items' => [
@@ -36,7 +35,7 @@ class StripeDriver extends AbstractGatewayDriver
                                 'name' => $data['product_name'] ?? 'Payment for Order ' . $orderId,
                             ],
                             // Stripe expects amount in cents
-                            'unit_amount' => (int) ($data['amount'] * 100),
+                            'unit_amount' => (int) round(((float)$data['amount']) * 100),
                         ],
                         'quantity' => 1,
                     ],
@@ -45,8 +44,12 @@ class StripeDriver extends AbstractGatewayDriver
                 'success_url' => $this->resolveUrl($this->config['success_url'] ?? '/payment/stripe/success') . '?session_id={CHECKOUT_SESSION_ID}&order_id=' . $orderId,
                 'cancel_url' => $this->resolveUrl($this->config['cancel_url'] ?? '/payment/stripe/cancel') . '?order_id=' . $orderId,
                 'client_reference_id' => $orderId,
-                'customer_email' => $data['customer_email'] ?? null,
             ];
+
+            // Only supply customer_email if provided, as Stripe API rejects null customer_email
+            if (!empty($data['customer_email'])) {
+                $payload['customer_email'] = $data['customer_email'];
+            }
 
             // Stripe Checkout Sessions API requires JSON body
             $response = $this->client->post($this->getBaseUrl() . '/checkout/sessions', [
@@ -84,7 +87,9 @@ class StripeDriver extends AbstractGatewayDriver
             $orderId = $data['order_id'] ?? ($responseData['client_reference_id'] ?? null);
 
             if (isset($responseData['payment_status']) && $responseData['payment_status'] === 'paid') {
-                return $this->formatResponse(true, 'Payment verified successfully', $orderId, null, $responseData);
+                $amount = isset($responseData['amount_total']) ? ((float)$responseData['amount_total'] / 100) : null;
+                $currency = strtoupper($responseData['currency'] ?? 'USD');
+                return $this->formatResponse(true, 'Payment verified successfully', $orderId, null, $responseData, $amount, $currency);
             }
 
             return $this->formatResponse(false, 'Payment pending or failed according to Stripe', $orderId, null, $responseData);
@@ -124,11 +129,13 @@ class StripeDriver extends AbstractGatewayDriver
         // For a true integration, you should verify the stripe-signature header using your webhook_secret
         // This is a simplified webhook handler.
         if (isset($payload['type']) && $payload['type'] === 'checkout.session.completed') {
-            $session = $payload['data']['object'];
-            $orderId = $session['client_reference_id'];
+            $session = $payload['data']['object'] ?? [];
+            $orderId = $session['client_reference_id'] ?? null;
             
-            if ($session['payment_status'] === 'paid') {
-                return $this->formatResponse(true, 'Webhook processed successfully', $orderId, null, $payload);
+            if (($session['payment_status'] ?? '') === 'paid') {
+                $amount = isset($session['amount_total']) ? ((float)$session['amount_total'] / 100) : null;
+                $currency = strtoupper($session['currency'] ?? 'USD');
+                return $this->formatResponse(true, 'Webhook processed successfully', $orderId, null, $payload, $amount, $currency);
             }
         }
 

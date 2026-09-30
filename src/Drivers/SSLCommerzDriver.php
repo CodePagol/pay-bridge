@@ -129,7 +129,7 @@ class SSLCommerzDriver extends AbstractGatewayDriver
                     $new_data[$value] = ($payload[$value]);
                 }
             }
-            $new_data['store_passwd'] = md5($this->config['store_password']);
+            $new_data['store_passwd'] = md5($this->config['store_password'] ?? '');
             ksort($new_data);
             $hash_string = "";
             foreach ($new_data as $key => $value) {

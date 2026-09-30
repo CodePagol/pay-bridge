@@ -85,8 +85,9 @@ class NagadDriver extends AbstractGatewayDriver
             $dateTime = date('YmdHis');
 
             // Phase 1: Initialize Payment
+            $merchantId = $this->config['merchant_id'] ?? '';
             $initData = [
-                'merchantId' => $this->config['merchant_id'],
+                'merchantId' => $merchantId,
                 'datetime' => $dateTime,
                 'orderId' => $orderId,
                 'challenge' => bin2hex(random_bytes(20))
@@ -102,7 +103,7 @@ class NagadDriver extends AbstractGatewayDriver
                 'signature' => $signature
             ];
 
-            $initResponse = $this->client->post($this->getBaseUrl() . '/check-out/initialize/' . $this->config['merchant_id'] . '/' . $orderId, [
+            $initResponse = $this->client->post($this->getBaseUrl() . '/check-out/initialize/' . $merchantId . '/' . $orderId, [
                 'headers' => [
                     'X-KM-IP-V4' => $this->getClientIp(),
                     'X-KM-Api-Version' => 'v-0.2.0',
@@ -128,7 +129,7 @@ class NagadDriver extends AbstractGatewayDriver
             $challenge = $decryptedSensitiveData['challenge'];
 
             $completeData = [
-                'merchantId' => $this->config['merchant_id'],
+                'merchantId' => $merchantId,
                 'orderId' => $orderId,
                 'currencyCode' => '050', // BDT currency code locally mapped
                 'amount' => number_format((float)$data['amount'], 2, '.', ''),
@@ -161,7 +162,7 @@ class NagadDriver extends AbstractGatewayDriver
             $completeResponseData = json_decode($completeResponse->getBody()->getContents(), true);
 
             if (isset($completeResponseData['status']) && $completeResponseData['status'] === 'Success' && isset($completeResponseData['callBackUrl'])) {
-                return $this->formatResponse(true, 'Payment initiated', $orderId, $completeResponseData['callBackUrl'], $completeResponseData);
+                return $this->formatResponse(true, 'Payment initiated', $orderId, $completeResponseData['callBackUrl'], $completeResponseData, (float)$data['amount'], 'BDT');
             }
 
             return $this->formatResponse(false, 'Failed to get Nagad checkout URL', $orderId, null, $completeResponseData);
@@ -176,7 +177,7 @@ class NagadDriver extends AbstractGatewayDriver
     {
         try {
             // Nagad sends payment_ref_id or paymentReferenceId on success redirect
-            $paymentRefId = $data['payment_ref_id'] ?? ($data['paymentReferenceId'] ?? null);
+            $paymentRefId = $data['payment_ref_id'] ?? ($data['paymentReferenceId'] ?? ($data['transaction_id'] ?? null));
 
             if (!$paymentRefId) {
                 return $this->formatResponse(false, 'Missing payment reference ID for verification');
@@ -193,8 +194,9 @@ class NagadDriver extends AbstractGatewayDriver
             $responseData = json_decode($response->getBody()->getContents(), true);
             $orderId = $responseData['orderId'] ?? null;
 
-            if (isset($responseData['status']) && $responseData['status'] === 'Success') {
-                return $this->formatResponse(true, 'Payment verified successfully', $orderId, null, $responseData);
+            if (isset($responseData['status']) && strtolower($responseData['status']) === 'success') {
+                $amount = isset($responseData['amount']) ? (float)$responseData['amount'] : null;
+                return $this->formatResponse(true, 'Payment verified successfully', $orderId, null, $responseData, $amount, 'BDT');
             }
 
             return $this->formatResponse(false, 'Payment verification failed', $orderId, null, $responseData);
